@@ -13,14 +13,8 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import everest
 import os
 import logging
+from truths import *
 log = logging.getLogger(__name__)
-
-# Injected planet params
-target = [211987102, 211492412, 211541097, 211733267]
-t0 = [2310.873, 2307.631, 2308.812, None]
-per = [15.789, 11.232, 10.1932, None]
-dur = [0.2, 0.2, 0.2, None]
-depth = [0.0002, 0.001, 0.0002, None]
 
 # Loop over all targets
 for i in range(len(target)):

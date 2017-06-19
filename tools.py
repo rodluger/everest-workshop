@@ -134,7 +134,7 @@ def Search(star, joint_fit = False, clobber = False, **kwargs):
     for b, brkpt in enumerate(star.breakpoints):
     
       # Log
-      print('Running chunk %d/%d...' % (b + 1, len(star.breakpoints)))
+      log.info('Searching chunk %d/%d...' % (b + 1, len(star.breakpoints)))
     
       # Get the time, gaps, and flux arrays and the Cholesky factorization of the covariance
       t, gaps, flux, C = GetChunkData(star, b, joint_fit = joint_fit)
@@ -243,7 +243,7 @@ class Load(everest.Everest):
     
     return os.path.dirname(os.path.abspath(__file__))
   
-  def search(self, joint_fit = False, clobber = False, periods = np.linspace(5., 20., 300), phases = np.linspace(0., 1., 300), **kwargs):
+  def search(self, joint_fit = False, clobber = False, periods = np.linspace(5., 20., 1000), phases = np.linspace(0., 1., 1000), **kwargs):
     '''
     
     '''
@@ -298,17 +298,18 @@ class Load(everest.Everest):
     pl.show()
     return time, ml_depth, depth_variance, delta_chisq
   
-  def heatmap(self, delta_chisq, periods = np.linspace(5., 20., 300), phases = np.linspace(0., 1., 300), **kwargs):
+  def heatmap(self, delta_chisq, periods = np.linspace(5., 20., 1000), phases = np.linspace(0., 1., 1000), **kwargs):
     '''
     
     '''
     
     # Call the Heatmap function
+    log.info('Computing delta chisq heatmap...')
     z = Heatmap(self.time, delta_chisq, periods, phases)
     
     # Plot
     fig, ax = pl.subplots(1)
-    im = ax.imshow(z.T, origin = 'lower', extent = (periods[0], periods[-1], phases[0], phases[-1]), aspect = 'auto', vmin = 0, vmax = z.max(), cmap = pl.get_cmap('Greys'))
+    im = ax.imshow(z.T, origin = 'lower', extent = (periods[0], periods[-1], phases[0], phases[-1]), aspect = 'auto', vmin = 0, vmax = z.max(), cmap = pl.get_cmap('plasma'))
     pl.colorbar(im, label = r'$\Sigma\Delta \chi^2$')
     ax.set_xlabel('Period [days]', fontweight = 'bold')
     ax.set_ylabel('Phase', fontweight = 'bold')

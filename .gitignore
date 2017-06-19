@@ -1,2 +1,4 @@
 *.npz
 .DS_Store
+truths.py
+__pycache__
