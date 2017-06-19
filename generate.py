@@ -4,9 +4,6 @@
 generate.py
 ----------
 
-planethost01.fits -- AWESOME
-
-
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
@@ -33,10 +30,10 @@ for i in range(len(target)):
     star.cdppg = 0
     star.clobber = True
     everest.fits.MakeFITS(star, fitsfile = 'tmp.fits')
-    os.rename(os.path.join(star.dir, 'tmp.fits'), 'planethost%02d.fits' % (i + 1))
+    os.rename(os.path.join(star.dir, 'tmp.fits'), 'target%02d.fits' % (i + 1))
   
   else:
     
     # Real planet!
     everest.fits.MakeFITS(star_orig, fitsfile = 'tmp.fits')
-    os.rename(os.path.join(star_orig.dir, 'tmp.fits'), 'planethost%02d.fits' % (i + 1))
+    os.rename(os.path.join(star_orig.dir, 'tmp.fits'), 'target%02d.fits' % (i + 1))

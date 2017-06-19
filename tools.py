@@ -16,7 +16,10 @@ import matplotlib.pyplot as pl
 from matplotlib.widgets import Slider, Button
 from scipy.linalg import cho_solve, cho_factor
 import os
-from tqdm import tqdm
+try:
+  from tqdm import tqdm
+except:
+  tqdm = lambda x: x
 import logging
 log = logging.getLogger(__name__)
 

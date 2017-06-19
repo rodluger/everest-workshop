@@ -1,10 +1,8 @@
 import tools
 import numpy as np
   
-# USER: The target number
+# USER: The target number, and wheter or not to do a joint instrumental/systematics fit
 ID = 1
-
-# USER: Perform a joint instrumental/systematics fit?
 joint_fit = True
 
 # Load the light curve
