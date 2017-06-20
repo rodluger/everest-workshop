@@ -371,7 +371,7 @@ class Load(everest.Everest):
     t = np.linspace(-5 * dur, 5 * dur, 1000)
     try:
       m = Transit(t, t0 = 0, per = per, dur = dur, depth = depth)
-      t = np.concatenate(([-1e2], t, [1e2]))
+      t = np.concatenate(([-per / 2], t, [per / 2]))
       m = np.concatenate(([1], m, [1]))
     except:
       m = np.ones_like(t) * np.nan
@@ -386,3 +386,26 @@ class Load(everest.Everest):
     ax.set_ylabel('Normalized Flux', fontweight = 'bold')
     ax.set_xlabel('Time from transit center [days]', fontweight = 'bold')
     pl.show()
+  
+  def plot(self, phase, per, depth, joint_fit = False):
+    '''
+    
+    '''
+    
+    # Get the time of first transit
+    t0 = self.time[0] + phase * per
+    
+    if joint_fit:
+      
+      # We will compute the light curve de-trended with
+      # a joint instrumental/transit and update the depth estimate
+      self.transit_model = TransitModel(self.time, t0 = t0, per = per, depth = depth)
+      self.compute_joint()
+      depth = self.transit_depth
+    
+    # Print to screen and plot!
+    print("PERIOD:        %.3f days" % per)
+    print("FIRST TRANSIT: %.3f days" % t0)
+    print("ML DEPTH:      %.3e" % depth)
+    self.plot_folded(t0, per, depth)
+    
