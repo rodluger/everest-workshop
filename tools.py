@@ -50,7 +50,9 @@ def Heatmap(time, delta_chisq, periods, phases):
         # NOTE: If your time array isn't uniform, this is
         # better, but way slower: ind = np.argmin(np.abs(time - t))
         ind = int(round((t - time[0]) / dt))
+        if ind == 3662: ind = 3661
         z[i,j] += delta_chisq[ind]
+          
   return z
 
 def MaskOutliers(star, pos_tol = 2.5, neg_tol = 50.):
@@ -223,7 +225,7 @@ class Load(everest.Everest):
   
   '''
   
-  def __init__(self, ID, quiet = False, clobber = False, **kwargs):
+  def __init__(self, ID, quiet = False, clobber = False, fitsfile = None, **kwargs):
     '''
     
     '''
@@ -243,7 +245,10 @@ class Load(everest.Everest):
     everest.utils.InitLog(None, logging.DEBUG, screen_level, False)
 
     # Load
-    self.fitsfile = 'target%02d.fits' % self.ID
+    if fitsfile is None:
+      self.fitsfile = 'target%02d.fits' % self.ID
+    else:
+      self.fitsfile = fitsfile
     self.model_name = 'rPLD'
     self._weights = None
     self.load_fits()
