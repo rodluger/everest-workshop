@@ -402,7 +402,7 @@ class Load(everest.Everest):
       self.transit_model = TransitModel(self.time, t0 = t0, per = per, depth = depth)
       self.compute_joint()
       depth = self.transit_depth
-    
+
     # Print to screen and plot!
     print("PERIOD:        %.3f days" % per)
     print("FIRST TRANSIT: %.3f days" % t0)
