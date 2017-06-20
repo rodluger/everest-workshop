@@ -7,10 +7,11 @@ tools.py
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
+import pysyzygy as ps
 import everest
-from everest.transit import TransitShape, TransitModel
+from everest.transit import TransitShape, Transit, Get_RpRs, Get_rhos
 from everest.math import SavGol
-from everest.gp import GetCovariance
+from everest.gp import GetCovariance, GP
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.widgets import Slider, Button
@@ -22,6 +23,16 @@ except:
   tqdm = lambda x: x
 import logging
 log = logging.getLogger(__name__)
+
+def TransitModel(sig_RpRs = 0.001, t0 = 0., per = 10., dur = 0.2, depth = 0.0001):
+  '''
+  A wrapper around `everest.TransitModel`
+  
+  '''
+  
+  RpRs = Get_RpRs(depth, t0 = t0, per = per)
+  rhos = Get_rhos(dur, t0 = t0, per = per)
+  return everest.transit.TransitModel('planet', t0 = t0, RpRs = RpRs, rhos = rhos, per = per)
 
 def Heatmap(time, delta_chisq, periods, phases):
   '''
@@ -294,14 +305,14 @@ class Load(everest.Everest):
     # Allow the user to plot the heat map
     axbutton = pl.axes([0.8, 0.025, 0.1, 0.03])
     button = Button(axbutton, 'Heatmap!')
-    callback = lambda x: self.heatmap(delta_chisq - (ml_depth - 10 ** slider.val) ** 2 / depth_variance, periods = periods, phases = phases)
+    callback = lambda x: self.heatmap(delta_chisq - (ml_depth - 10 ** slider.val) ** 2 / depth_variance, periods = periods, phases = phases, depth = 10 ** slider.val)
     button.on_clicked(callback)
     
     # Show and return the results
     pl.show()
     return time, ml_depth, depth_variance, delta_chisq
   
-  def heatmap(self, delta_chisq, periods = np.linspace(5., 20., 1000), phases = np.linspace(0., 1., 1000), **kwargs):
+  def heatmap(self, delta_chisq, periods = np.linspace(5., 20., 1000), phases = np.linspace(0., 1., 1000), depth = 0.0001, **kwargs):
     '''
     
     '''
@@ -312,10 +323,18 @@ class Load(everest.Everest):
     
     # Plot
     fig, ax = pl.subplots(1)
-    im = ax.imshow(z.T, origin = 'lower', extent = (periods[0], periods[-1], phases[0], phases[-1]), aspect = 'auto', vmin = 0, vmax = np.nanmax(z), cmap = pl.get_cmap('plasma'))
+    im = ax.imshow(z.T, origin = 'lower', extent = (periods[0], periods[-1], phases[0], phases[-1]), 
+                   aspect = 'auto', vmin = 0, vmax = np.nanmax(z), cmap = pl.get_cmap('plasma'),
+                   picker = True)
     pl.colorbar(im, label = r'$\Sigma\Delta \chi^2$')
     ax.set_xlabel('Period [days]', fontweight = 'bold')
     ax.set_ylabel('Phase', fontweight = 'bold')
+    ax.set_title('Click on a point to view a folded light curve')
+    
+    # Allow user to click on points and plot the folded light curve
+    # Note that the duration is fixed at 0.2 for this workshop!
+    callback = lambda event: self.plot_folded(self.time[0] + event.mouseevent.ydata * event.mouseevent.xdata, event.mouseevent.xdata, depth, dur = 0.2)
+    fig.canvas.mpl_connect('pick_event', callback)
     
     # Plot the highest likelihood model
     i, j = np.unravel_index(np.nanargmax(z), z.shape)
@@ -324,4 +343,46 @@ class Load(everest.Everest):
     # Show and return the heatmap
     pl.show()
     return z
+  
+  def plot_folded(self, t0, per, depth, dur = 0.2):
+    '''
     
+    '''
+    
+    # 
+    log.info('Whitening and folding light curve...')
+    
+    # Fold on the period
+    tfold = (self.time - t0 - per / 2.) % per - per / 2. 
+
+    # Subtract a GP model for the baseline after masking the outliers
+    # and dividing out the transit model
+    try:
+      transit_model = Transit(self.time, t0 = t0, per = per, dur = dur, depth = depth)
+    except:
+      transit_model  = np.ones_like(self.time)
+    gp = GP(self.kernel, self.kernel_params)
+    gp.compute(np.delete(self.time, self.mask), np.delete(self.fraw_err, self.mask))
+    med = np.nanmedian(self.flux)
+    y, _ = gp.predict(np.delete(self.flux / transit_model, self.mask) - med, self.time)
+    y = (self.flux - y) / med
+
+    # Compute the transit model
+    t = np.linspace(-5 * dur, 5 * dur, 1000)
+    try:
+      m = Transit(t, t0 = 0, per = per, dur = dur, depth = depth)
+      t = np.concatenate(([-1e2], t, [1e2]))
+      m = np.concatenate(([1], m, [1]))
+    except:
+      m = np.ones_like(t) * np.nan
+    
+    # Plot!
+    fig, ax = pl.subplots(1, figsize = (8, 4))
+    fig.subplots_adjust(left = 0.15, bottom = 0.15)
+    ax.plot(tfold, y, 'k.', alpha = 0.75, ms = 2)
+    ax.plot(t, m, 'r-')
+    ax.set_xlim(-5 * dur, 5 * dur)
+    ax.set_ylim(1 - 4 * depth, 1 + 4 * depth)
+    ax.set_ylabel('Normalized Flux', fontweight = 'bold')
+    ax.set_xlabel('Time from transit center [days]', fontweight = 'bold')
+    pl.show()
