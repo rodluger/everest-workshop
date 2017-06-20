@@ -22,7 +22,7 @@ for i in range(len(target)):
   star_orig = everest.rPLD(target[i], debug = True)
   
   # Injection or real planet?
-  if t0 is not None:
+  if t0[i] is not None:
   
     # Inject the planet, de-trend, and generate a FITS file
     star = everest.Inject(target[i], inj_model = 'rPLD', t0 = t0[i], per = per[i], dur = dur[i], 

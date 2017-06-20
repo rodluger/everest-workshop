@@ -1,9 +1,9 @@
 import tools
 import numpy as np
   
-# USER: The target number, and wheter or not to do a joint instrumental/systematics fit
-ID = 1
-joint_fit = True
+# USER: The target number, and whether or not to do a joint instrumental/systematics fit
+ID = 3
+joint_fit = False
 
 # Load the light curve
 star = tools.Load(ID)

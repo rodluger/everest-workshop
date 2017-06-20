@@ -312,11 +312,13 @@ class Load(everest.Everest):
     
     # Plot
     fig, ax = pl.subplots(1)
-    im = ax.imshow(z.T, origin = 'lower', extent = (periods[0], periods[-1], phases[0], phases[-1]), aspect = 'auto', vmin = 0, vmax = z.max(), cmap = pl.get_cmap('plasma'))
+    im = ax.imshow(z.T, origin = 'lower', extent = (periods[0], periods[-1], phases[0], phases[-1]), aspect = 'auto', vmin = 0, vmax = np.nanmax(z), cmap = pl.get_cmap('plasma'))
     pl.colorbar(im, label = r'$\Sigma\Delta \chi^2$')
     ax.set_xlabel('Period [days]', fontweight = 'bold')
     ax.set_ylabel('Phase', fontweight = 'bold')
-    i, j = np.unravel_index(np.argmax(z), z.shape)
+    
+    # Plot the highest likelihood model
+    i, j = np.unravel_index(np.nanargmax(z), z.shape)
     pl.plot(periods[i], phases[j], 'o', ms = 20, markerfacecolor = 'none', markeredgecolor = 'r')
     
     # Show and return the heatmap
