@@ -1,5 +1,7 @@
 # everest-workshop
 
+## Installation
+
 First, install **everest**:
 ```
 pip install everest-pipeline
@@ -16,10 +18,23 @@ cd everest-workshop
 pip install tqdm
 ```
 
-You're good to go. Run
+You're good to go. 
+
+## Group 1: De-trend THEN search
+Run
 
 ```
-python deltachisq.py
+python group1.py
+```
+
+to start your transit search!
+
+
+## Group 2: De-trend AND search
+Run
+
+```
+python group2.py
 ```
 
 to start your transit search!
