@@ -4,7 +4,7 @@
 
 Check out this brief [presentation](everest-workshop.pdf) for an introduction to **everest** and this workshop.
 
-And here's the link to the IPython Notebook [EZ-PLD tutorial](ez_pld.ipynb).
+And here's the link to the IPython Notebook [EZ-PLD tutorial](easy_pld.ipynb).
 
 ## Installation
 
