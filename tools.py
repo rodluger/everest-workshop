@@ -10,7 +10,9 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import pysyzygy as ps
 import everest
 from everest.transit import TransitShape, Transit, Get_RpRs, Get_rhos
-from everest.math import SavGol
+from everest.math import SavGol, Interpolate
+from scipy.signal import savgol_filter
+from scipy.linalg import cho_solve, cho_factor, block_diag
 from everest.gp import GetCovariance, GP
 import numpy as np
 import matplotlib.pyplot as pl
@@ -23,6 +25,8 @@ except:
   tqdm = lambda x: x
 import logging
 log = logging.getLogger(__name__)
+import warnings
+warnings.filterwarnings("ignore")
 
 def TransitModel(sig_RpRs = 0.001, t0 = 0., per = 10., dur = 0.2, depth = 0.0001):
   '''
@@ -50,7 +54,6 @@ def Heatmap(time, delta_chisq, periods, phases):
         # NOTE: If your time array isn't uniform, this is
         # better, but way slower: ind = np.argmin(np.abs(time - t))
         ind = int(round((t - time[0]) / dt))
-        if ind == 3662: ind = 3661
         z[i,j] += delta_chisq[ind]
           
   return z
@@ -338,7 +341,7 @@ class Load(everest.Everest):
     
     # Allow user to click on points and plot the folded light curve
     # Note that the duration is fixed at 0.2 for this workshop!
-    callback = lambda event: self.plot_folded(self.time[0] + event.mouseevent.ydata * event.mouseevent.xdata, event.mouseevent.xdata, depth, dur = 0.2)
+    callback = lambda event: self.plot_folded(event.mouseevent.ydata, event.mouseevent.xdata, depth, dur = 0.2)
     fig.canvas.mpl_connect('pick_event', callback)
     
     # Plot the highest likelihood model
@@ -349,28 +352,26 @@ class Load(everest.Everest):
     pl.show()
     return z
   
-  def plot_folded(self, t0, per, depth, dur = 0.2):
+  def plot_folded(self, phase = 0., per = 10., depth = 0.001, dur = 0.2):
     '''
     
     '''
-    
+
     # 
     log.info('Whitening and folding light curve...')
     
     # Fold on the period
+    t0 = self.time[0] + phase * per
     tfold = (self.time - t0 - per / 2.) % per - per / 2. 
 
-    # Subtract a GP model for the baseline after masking the outliers
-    # and dividing out the transit model
+    # Apply a hacky savitsky-golay filter to remove the red noise...
     try:
       transit_model = Transit(self.time, t0 = t0, per = per, dur = dur, depth = depth)
     except:
       transit_model  = np.ones_like(self.time)
-    gp = GP(self.kernel, self.kernel_params)
-    gp.compute(np.delete(self.time, self.mask), np.delete(self.fraw_err, self.mask))
     med = np.nanmedian(self.flux)
-    y, _ = gp.predict(np.delete(self.flux / transit_model, self.mask) - med, self.time)
-    y = (self.flux - y) / med
+    y = Interpolate(self.time, np.concatenate((self.mask, np.where(np.abs(tfold) < dur / 2.)[0])), self.flux)
+    y = (self.flux - savgol_filter(y, 21, 2) + med) / med
 
     # Compute the transit model
     t = np.linspace(-5 * dur, 5 * dur, 1000)
@@ -392,7 +393,7 @@ class Load(everest.Everest):
     ax.set_xlabel('Time from transit center [days]', fontweight = 'bold')
     pl.show()
   
-  def plot(self, phase, per, depth, joint_fit = False):
+  def compute_depth(self, phase = 0., per = 10., joint_fit = False, plot = True):
     '''
     
     '''
@@ -403,14 +404,39 @@ class Load(everest.Everest):
     if joint_fit:
       
       # We will compute the light curve de-trended with
-      # a joint instrumental/transit and update the depth estimate
-      self.transit_model = TransitModel(self.time, t0 = t0, per = per, depth = depth)
-      self.compute_joint()
-      depth = self.transit_depth
-
+      # a joint instrumental/transit and get the depth
+      time = np.delete(self.time, self.mask)
+      flux = np.delete(self.flux, self.mask)
+      err = np.delete(self.fraw_err, self.mask)
+      trn = TransitModel(self.time, t0 = t0, per = per)(time)
+      K = GetCovariance(self.kernel, self.kernel_params, time, err)
+      XLX = [None for b in self.breakpoints]
+      for b, brkpt in enumerate(self.breakpoints):
+        m = self.get_masked_chunk(b, pad = False)
+        XLX[b] = np.zeros((len(m), len(m)))
+        for n in range(self.pld_order):
+          XM = self.X(n,m)
+          XLX[b] += self.lam[b][n] * np.dot(XM, XM.T)
+          del XM
+      XLX = block_diag(*XLX)
+      CDK = cho_factor(K + XLX)
+      variance = 1. / np.dot(trn, cho_solve(CDK, trn))
+      depth = variance * np.dot(trn, cho_solve(CDK, flux)) / np.nanmedian(self.flux)
+      variance /= np.nanmedian(self.flux) ** 2
+      
+    else:
+      
+      # Let's fit the transit to the de-trended data and see what depth we get
+      time = np.delete(self.time, self.mask)
+      flux = np.delete(self.flux, self.mask)
+      err = np.delete(self.fraw_err, self.mask)
+      trn = TransitModel(self.time, t0 = t0, per = per)(time)
+      K = GetCovariance(self.kernel, self.kernel_params, time, err)
+      CDK = cho_factor(K)
+      variance = 1. / np.dot(trn, cho_solve(CDK, trn))
+      depth = variance * np.dot(trn, cho_solve(CDK, flux)) / np.nanmedian(self.flux)
+      variance /= np.nanmedian(self.flux) ** 2
+      
     # Print to screen and plot!
-    print("PERIOD:        %.3f days" % per)
-    print("FIRST TRANSIT: %.3f days" % t0)
-    print("ML DEPTH:      %.3e" % depth)
-    self.plot_folded(t0, per, depth)
+    return depth, np.sqrt(variance)
     
