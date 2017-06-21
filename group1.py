@@ -24,8 +24,8 @@ else:
   # Once you know the phase and the period, compute the depth posterior
   depth, depth_uncert = star.compute_depth(joint_fit = False, phase = phase, per = per)
 
-  # Once you know the depth, plot the folded light curve!
-  star.plot_folded(phase = phase, per = per, depth = depth)
-
   # Print the result
   print("Depth = %.6f +/- %.6f" % (depth, depth_uncert))
+
+  # Once you know the depth, plot the folded light curve!
+  star.plot_folded(phase = phase, per = per, depth = depth)
