@@ -4,3 +4,4 @@ truths.py
 __pycache__
 answers.py
 *.key
+.ipynb_checkpoints
