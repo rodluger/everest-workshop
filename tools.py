@@ -290,9 +290,9 @@ class Load(everest.Everest):
     ax[1].yaxis.set_label_coords(-0.075,0.5)
     ax[2].yaxis.set_label_coords(-0.075,0.5)
     if joint_fit:
-      ax[0].set_title('Joint instrumental/transit model', fontweight = 'bold')
+      ax[0].set_title('De-trend AND search', fontweight = 'bold')
     else:
-      ax[0].set_title('De-trend then search', fontweight = 'bold')
+      ax[0].set_title('De-trend THEN search', fontweight = 'bold')
 
     # Allow the user to change the `true` depth
     axslider = pl.axes([0.125, 0.025, 0.65, 0.03])
@@ -391,6 +391,7 @@ class Load(everest.Everest):
     ax.set_ylim(1 - 4 * depth, 1 + 4 * depth)
     ax.set_ylabel('Normalized Flux', fontweight = 'bold')
     ax.set_xlabel('Time from transit center [days]', fontweight = 'bold')
+    ax.set_title('period = %.5f / phase = %.5f' % (per, phase))
     pl.show()
   
   def compute_depth(self, phase = 0., per = 10., joint_fit = False, plot = True):
