@@ -1,5 +1,9 @@
 # everest-workshop
 
+## Introduction
+
+Check out this brief [presentation](everest-workshop.pdf) for an introduction to **everest** and this workshop.
+
 ## Installation
 
 First, install **everest**:
