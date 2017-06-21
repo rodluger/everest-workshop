@@ -6,3 +6,4 @@ answers.py
 scoresheet.py
 *.key
 .ipynb_checkpoints
+*.mp4
