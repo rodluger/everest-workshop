@@ -1,8 +1,5 @@
 *.npz
 .DS_Store
-truths.py
 __pycache__
-answers.py
-scoresheet.py
 *.key
 .ipynb_checkpoints
